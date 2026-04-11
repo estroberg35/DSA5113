@@ -63,18 +63,9 @@ def evaluate(x):
     totalValue = np.dot(a,b)     #compute the value of the knapsack selection
     totalWeight = np.dot(a,c)    #compute the weight value of the knapsack selection
     
-    if totalWeight > maxWeight:
-        print ("Infeasible solution... removing items until feasible...")  
-        # weight removal method: if the solution is infeasible, start removing items with the lowest value/weight ratio until we are below the weight limit
-        value_weight_ratio = b/c
-        sorted_indices = np.argsort(value_weight_ratio) # sort the indices of the items based on their value/weight ratio
-        for i in sorted_indices:
-            if totalWeight <= maxWeight: # for when we get to later stages of the loop and are below the weight limit -- we can stop removing items
-                break
-            if a[i] == 1: # if the item is currently included in the knapsack
-                a[i] = 0 # remove the item from the knapsack
-                totalValue -= b[i] # update the total value
-                totalWeight -= c[i] # update the total weight
+    if totalWeight > maxWeight: # assign values of -1000 to make these solutions very undesireable and never chosen --> infeasible
+         totalValue = -1000 
+         totalWeight = -1000
       
     return [totalValue, totalWeight]   #returns a list of both total value and total weight
           
@@ -100,7 +91,7 @@ def neighborhood(x):
 
 #create the initial solution STRATEGY 1
 # this strategy involves randomly selecting items until we reach the weight limit
-def initial_solution():
+def initial_solution1():
     x = []   #i recommend creating the solution as a list
     curr_weight = 0
     
@@ -121,24 +112,63 @@ def initial_solution():
 
 #create the initial solution STRATEGY 2
 # this strategy sets a weight threshold and only selects items that weigh less than that threshold until we reach the weight limit
-# def initial_solution():
-#     x = []   #i recommend creating the solution as a list
-#     curr_weight = 0
-#     threshold = 60 # we set the weight threshold to 60 because it is the mode (most commonly assigned weight)
+def initial_solution2():
+    x = []   #i recommend creating the solution as a list
+    curr_weight = 0
+    threshold = 60 # we set the weight threshold to 60 because it is the mode (most commonly assigned weight)
 
-#     for i in range(n):
-#         if weights[i] < threshold and curr_weight + weights[i] <= maxWeight:
-#             x.append(1) # if the item is below the threshold and we are below the limit, include it in the knapsack
-#             curr_weight += weights[i]
-#         else:
-#             x.append(0) # if the item is not below the threshold or we are above the limit, do not include it in the knapsack
-#     return x
+    for i in range(n):
+        if weights[i] < threshold and curr_weight + weights[i] <= maxWeight:
+            x.append(1) # if the item is below the threshold and we are below the limit, include it in the knapsack
+            curr_weight += weights[i]
+        else:
+            x.append(0) # if the item is not below the threshold or we are above the limit, do not include it in the knapsack
+    return x
+
+#create the initial solution STRATEGY 3
+# this strategy involves randomly selecting items until we reach the weight limit
+def initial_solution3():
+    #x = []   #i recommend creating the solution as a list
+    x = [0 for _ in range(n)] #initialize everything to 0....
+    curr_weight = 0
+    
+    done = 0
+    while done == 0:
+        item_index = myPRNG.randint(0,n-1)
+        if x[item_index] == 1:
+            continue #already used
+        #this would have pushed us over weight limit, don't add items and try no more
+        if weights[item_index] + curr_weight > maxWeight:
+            done = 1
+            continue
+        x[item_index] = 1
+        curr_weight = weights[item_index] + curr_weight
+    return x
+    
+# #create the initial solution STRATEGY 4
+# # this strategy involves choosing items first based on best weight/value ratio
+# # This is probably the best solution by default, which negates the purpose of this HW
+# # So using random one instead
+def initial_solution4():
+    x = [0 for _ in range(n)]
+    a=np.array(x)
+    b=np.array(value)
+    c=np.array(weights)
+    value_weight_ratio = b/c
+    sorted_indices = np.argsort(-value_weight_ratio) #negative so it sorts descending
+    totalWeight = 0
+    for i in sorted_indices:
+        if totalWeight + weights[i] > maxWeight:
+            continue 
+        totalWeight = totalWeight + weights[i]
+        x[i] = 1
+    return x
 
 
 #varaible to record the number of solutions evaluated
 solutionsChecked = 0
 
-x_curr = initial_solution()  #x_curr will hold the current solution 
+x_curr = initial_solution3()  #x_curr will hold the current solution 
 f_curr = evaluate(x_curr)    #f_curr will hold the evaluation of the current soluton 
  
 # we don't need x_best or f_best above becuase this is first improvement, we move immediately
